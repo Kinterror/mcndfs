@@ -10,11 +10,8 @@ import graph.State;
 
 class Colors {
 
-
-
     private Map<State, Color> map;
     
-
 
     Colors(Map<State, Color> map) {
         this.map = map;

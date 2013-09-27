@@ -11,13 +11,16 @@ import graph.Graph;
 import graph.State;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import ndfs.nndfs.Color;
-import ndfs.mcndfs_1_naive.Color;
 
 import ndfs.NDFS;
 import ndfs.NDFSFactory;
 import ndfs.Result;
+import ndfs.mcndfs_1_naive.MCNDFS;
 
 public class Main {
 
@@ -42,18 +45,8 @@ public class Main {
 
         Graph graph = GraphFactory.createGraph(file);
         NDFS ndfs;
-        switch (version) {
-            case "seq":
-                ndfs = NDFSFactory.createNNDFS(graph, colorStore);
-                break;
-                
-            case "multicore":
-                ndfs = NDFSFactory.createMCNDFSNaive(graph, colorStore);
-                break;
-                
-            default:
-                throw new ArgumentException("Unkown version: " + version);
-        }
+        ndfs = NDFSFactory.createNNDFS(graph, colorStore);
+
         long start = System.currentTimeMillis();
         
         long end;
@@ -66,37 +59,68 @@ public class Main {
             System.out.printf("%s took %d ms\n", version, end - start);
         }
     }
+    
+    // To factor with runNDFS ? problem with Color argument
+    private static void runMCNDFS(String version, Map<State, ndfs.mcndfs_1_naive.Color> colorStore,
+            File file) throws FileNotFoundException, ArgumentException {
 
-    private static void dispatch(File file, String version, int nrWorkers)
+        Graph graph = GraphFactory.createGraph(file);
+        NDFS ndfs;
+        ndfs = NDFSFactory.createMCNDFSNaive(graph, colorStore);
+
+        long start = System.currentTimeMillis();
+
+        long end;
+        try {
+            ndfs.ndfs();
+            throw new Error("No result returned by " + version);
+        } catch (Result r) {
+            end = System.currentTimeMillis();
+            System.out.println(r.getMessage());
+            System.out.printf("%s took %d ms\n", version, end - start);
+        }
+    }
+
+    private static void dispatch(final File file, String version, int nrWorkers)
             throws ArgumentException, FileNotFoundException {
         switch (version) {
-            case "seq":
-                {
-                    if (nrWorkers != 1) {
-                        throw new ArgumentException("seq can only run with 1 worker");
-                    }
-                    Map<State, ndfs.nndfs.Color> map = new HashMap<State, ndfs.nndfs.Color>();
-                    runNDFS("seq", map, file);
-                    break;
+            case "seq": {
+                if (nrWorkers != 1) {
+                    throw new ArgumentException("seq can only run with 1 worker");
                 }
-            case "multicore":
-                {
-                    if (nrWorkers == 0) {
-                        throw new ArgumentException("multicore can only work with at least 1 worker");
-                    }
-                    
-                    ExecutorService executor = Executors.newFixedThreadPool(nrWorkers);
-                    //Runnable worker = new MyRunnable...
-                    //executor.execute(worker);
-                    
-                    Map<State, ndfs.mcndfs_1_naive.Color> map = new HashMap<State, ndfs.mcndfs_1_naive.Color>();
-                    runNDFS("multicore", map, file);
-                    
-                    //executor.shutdown();
-                    //executor.awaitTermination();
-                    
-                    break;
+                Map<State, ndfs.nndfs.Color> map = new HashMap<State, ndfs.nndfs.Color>();
+                runNDFS("seq", map, file);
+                break;
+            }
+            case "multicore": {
+                if (nrWorkers <= 0) {
+                    throw new ArgumentException("multicore can only work with at least 1 worker");
                 }
+
+                ExecutorService executor = Executors.newFixedThreadPool(nrWorkers);
+
+                for (int i = 0; i < nrWorkers; i++) {
+                    executor.execute(new Runnable() {
+                        @Override
+                        public void run() {
+                            Map<State, ndfs.mcndfs_1_naive.Color> map = new HashMap<State, ndfs.mcndfs_1_naive.Color>();
+                            try {
+                                runMCNDFS("multicore", map, file);
+                            } catch (FileNotFoundException | ArgumentException ex) {
+                                Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
+                            }
+                        }
+                    });
+                }
+                executor.shutdown();
+                try {
+                    executor.awaitTermination(1, TimeUnit.DAYS);
+                } catch (InterruptedException ex) {
+                    Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
+                }
+
+                break;
+            }
             default:
                 throw new ArgumentException("Unkown version: " + version);
         }

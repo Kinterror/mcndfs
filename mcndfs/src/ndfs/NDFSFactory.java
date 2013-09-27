@@ -1,12 +1,9 @@
 package ndfs;
 
-
-
 import java.util.Map;
 
 import graph.Graph;
 import graph.State;
-
 
 
 public class NDFSFactory {
@@ -21,6 +18,6 @@ public class NDFSFactory {
 
     public static NDFS createMCNDFSNaive(Graph graph, Map<State,
             ndfs.mcndfs_1_naive.Color> map) {
-        return new ndfs.mcndfs_1_naive.NNDFS(graph, map);
+        return new ndfs.mcndfs_1_naive.MCNDFS(graph, map);
     }
 }
