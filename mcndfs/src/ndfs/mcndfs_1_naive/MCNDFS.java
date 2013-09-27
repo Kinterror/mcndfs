@@ -21,7 +21,7 @@ public class MCNDFS implements NDFS{
     
     private static Red red;
     private static Counter count;
-    private Map<State, Boolean> pink;
+    private Pink pink;
     
     
     // Initialize all the static fields
@@ -34,7 +34,7 @@ public class MCNDFS implements NDFS{
     public MCNDFS(Graph graph, Map<State, Color> colorStore) {
         this.graph = graph;
         this.colors = new Colors(colorStore);
-        this.pink = new HashMap<State, Boolean>();
+        this.pink = new Pink(new HashMap<State, Boolean>());
     }
 
 
@@ -43,12 +43,12 @@ public class MCNDFS implements NDFS{
 
 
     private void dfsRed(State s) throws Result {
-        pink.put(s, true);
+        pink.setPink(s, true);
         for (State t : graph.post(s)) {
             if (colors.hasColor(t, Color.CYAN)) {
                 throw new CycleFound();
             }
-            else if (pink.get(t)==false && red.isRed(t)==false) {
+            if (pink.isPink(t)==false && red.isRed(t)==false) {
                 dfsRed(t);
             }
         }
@@ -68,7 +68,7 @@ public class MCNDFS implements NDFS{
             }
         }
         red.setRed(s, true);
-        pink.put(s, false);
+        pink.setPink(s, false);
     }
 
 
