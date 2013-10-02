@@ -27,6 +27,7 @@ public class Main {
     private static class ArgumentException extends Exception {
 
         private static final long serialVersionUID = 1L;
+        private ExecutorService executor;
 
         ArgumentException(String message) {
             super(message);
@@ -61,25 +62,69 @@ public class Main {
     }
     
     // To factor with runNDFS ? problem with Color argument
-    private static void runMCNDFS(String version, Map<State, ndfs.mcndfs_1_naive.Color> colorStore,
-            File file) throws FileNotFoundException, ArgumentException {
+    private static void runMCNDFS(final String version, final File file, int nrWorkers) throws FileNotFoundException, ArgumentException {
 
-        Graph graph = GraphFactory.createGraph(file);
-        NDFS ndfs;
-        ndfs = NDFSFactory.createMCNDFSNaive(graph, colorStore);
 
-        long start = System.currentTimeMillis();
+        final ExecutorService executor = Executors.newFixedThreadPool(nrWorkers);
 
-        long end;
+        for (int i = 0; i < nrWorkers; i++) {
+            executor.execute(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        Graph graph = GraphFactory.createGraph(file);
+                        Map<State, ndfs.mcndfs_1_naive.Color> colorStore = new HashMap<State, ndfs.mcndfs_1_naive.Color>();
+                        Map<State, Boolean> pinkStore = new HashMap<State, Boolean>();
+                        
+                        NDFS ndfs = NDFSFactory.createMCNDFSNaive(graph, colorStore, pinkStore);
+
+                        long start = System.currentTimeMillis();
+
+                        long end;
+                        try {
+                            ndfs.ndfs();
+                            throw new Error("No result returned by " + version);
+                        } catch (Result r) {
+                            end = System.currentTimeMillis();
+                            System.out.println("thread " +Thread.currentThread().getName()+ " - " + r.getMessage());
+                            System.out.printf("%s took %d ms\n", version, end - start);
+                            
+                        }
+
+                    } catch (FileNotFoundException ex) {
+                        Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
+                    }
+                }
+            });
+
+
+
+        }
+        executor.shutdown();
         try {
-            ndfs.ndfs();
-            throw new Error("No result returned by " + version);
-        } catch (Result r) {
-            end = System.currentTimeMillis();
-            System.out.println(r.getMessage());
-            System.out.printf("%s took %d ms\n", version, end - start);
+            executor.awaitTermination(1, TimeUnit.DAYS);
+        } catch (InterruptedException ex) {
+            Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
+        /*
+         Graph graph = GraphFactory.createGraph(file);
+         NDFS ndfs;
+         ndfs = NDFSFactory.createMCNDFSNaive(graph, colorStore);
+
+         long start = System.currentTimeMillis();
+
+         long end;
+         try {
+         ndfs.ndfs();
+         throw new Error("No result returned by " + version);
+         } catch (Result r) {
+         end = System.currentTimeMillis();
+         System.out.println(r.getMessage());
+         System.out.printf("%s took %d ms\n", version, end - start);
+         }
+         */
+
 
     private static void dispatch(final File file, String version, int nrWorkers)
             throws ArgumentException, FileNotFoundException {
@@ -96,9 +141,13 @@ public class Main {
                 if (nrWorkers <= 0) {
                     throw new ArgumentException("multicore can only work with at least 1 worker");
                 }
-
-                ExecutorService executor = Executors.newFixedThreadPool(nrWorkers);
-
+                
+                //Map<State, ndfs.mcndfs_1_naive.Color> map = new HashMap<State, ndfs.mcndfs_1_naive.Color>();
+                //Map<State, Boolean> mapPink = new HashMap<State, Boolean>();
+                runMCNDFS("multicore", file, nrWorkers);
+                break;
+                
+                /*
                 for (int i = 0; i < nrWorkers; i++) {
                     executor.execute(new Runnable() {
                         @Override
@@ -118,8 +167,8 @@ public class Main {
                 } catch (InterruptedException ex) {
                     Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
                 }
-
-                break;
+                */
+                
             }
             default:
                 throw new ArgumentException("Unkown version: " + version);
