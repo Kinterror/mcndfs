@@ -31,10 +31,10 @@ public class MCNDFS implements NDFS{
     }
 
 
-    public MCNDFS(Graph graph, Map<State, Color> colorStore) {
+    public MCNDFS(Graph graph, Map<State, Color> colorStore, Map<State, Boolean> pinkStore) {
         this.graph = graph;
         this.colors = new Colors(colorStore);
-        this.pink = new Pink(new HashMap<State, Boolean>());
+        this.pink = new Pink(pinkStore);
     }
 
 
@@ -61,7 +61,7 @@ public class MCNDFS implements NDFS{
             }
             while(count.getValue(s) != 0){ //await s.count == 0
                 try {
-                    wait();
+                    Thread.currentThread().wait(500);
                 } catch (InterruptedException ex) {
                     Logger.getLogger(MCNDFS.class.getName()).log(Level.SEVERE, null, ex);
                 }

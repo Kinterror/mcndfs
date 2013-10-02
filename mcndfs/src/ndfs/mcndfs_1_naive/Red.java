@@ -18,7 +18,7 @@ class Red {
 
     
     synchronized boolean isRed(State state) {
-        if(map.get(state)==null){//The first time a state is visited, it isn't in the map, so we add it and set his color
+        if(map.get(state)==null){//The first time a state is visited, it isn't in the map, so we add it and set its value to false
             map.put(state, false);
         }
         return map.get(state);
