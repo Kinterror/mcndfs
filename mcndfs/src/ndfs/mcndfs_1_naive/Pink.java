@@ -16,15 +16,15 @@ class Pink {
     }
 
     
-    synchronized boolean isPink(State state) {
-        if(map.get(state)==null){//The first time a state is visited, it isn't in the map, so we add it and set his color
+    boolean isPink(State state) {
+        if(map.get(state)==null){//The first time a state is visited, it isn't in the map, so we add it and set its value
             map.put(state, false);
         }
         return map.get(state);
     }
 
 
-    synchronized void setPink(State state, Boolean b) {
+    void setPink(State state, Boolean b) {
         map.put(state, b);
     }
 }

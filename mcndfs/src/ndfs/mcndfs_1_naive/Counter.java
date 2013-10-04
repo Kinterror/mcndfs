@@ -3,34 +3,56 @@ package ndfs.mcndfs_1_naive;
 
 import java.util.Map;
 import graph.State;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 
 class Counter {
 
     private Map<State, Integer> map;
+    
+    final Lock lock = new ReentrantLock();
+    final Condition equalZero = lock.newCondition();
 
     
     Counter(Map<State, Integer> map) {
         this.map = map;
     }
 
-    synchronized void incrementCounter(State state) {
-        if(map.get(state)==null){//The first time a state is visited, it isn't in the map, so we add it and set his value to 0
-            map.put(state, 0);
+    void incrementCounter(State state) {
+        lock.lock();
+        try {
+            if (map.get(state) == null) {   //The first time a state is visited,
+                                            //it isn't in the map, so we add it and set his value to 0.
+                map.put(state, 0);
+            }
+            map.put(state, map.get(state) + 1);
+        } finally {
+            lock.unlock();
         }
-        map.put(state, map.get(state)+1);
     }
     
-    synchronized void decrementCounter(State state) throws Exception{
-        if(map.get(state)==null)
-            throw new Exception("Error: the state is not in the map");
-        else if(map.get(state)<=0)
-            throw new Exception("Error: the state's count value is below or equal 0");
-        
-        map.put(state, map.get(state)-1);
+    void decrementCounter(State state) throws Exception {
+        lock.lock();
+        try {
+            if (map.get(state) == null) {
+                throw new Exception("Error: the state is not in the map");
+            } else if (map.get(state) <= 0) {
+                throw new Exception("Error: the state's count value is below or equal 0");
+            }
+            else{
+                map.put(state, map.get(state) - 1);
+                equalZero.signalAll();
+            }
+        } finally {
+            lock.unlock();
+        }
     }
+    
+    //public
 
-    synchronized int getValue(State state){
+    int getValue(State state){
         return map.get(state);
     }
     
