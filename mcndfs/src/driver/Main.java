@@ -72,43 +72,67 @@ public class Main {
     private static void runMCNDFS(final String version, final File file, int nrWorkers) throws FileNotFoundException, ArgumentException {
 
         ExecutorService executor = Executors.newFixedThreadPool(nrWorkers);
-        Collection<Callable<String>> solvers = new ArrayList<Callable<String>>();
-        CompletionService<String> ecs = new ExecutorCompletionService<String>(executor);
-        
-        List<Future<String>> futures = new ArrayList<Future<String>>(nrWorkers);
-        String result = "no cycle...";
-        try {
-            
-        
-        }finally{
-            for (Future<String> f : futures)
-                f.cancel(true);
-        }
-        for (int i = 0; i < nrWorkers; i++) {
-            Callable<String> callable = new ThreadWorker(file, version);
-            Future<String> future = executor.submit(callable);
-            list.add(future);
-        }
+        //Collection<Callable<String>> solvers = new ArrayList<Callable<String>>();
+        CompletionService<String> taskCompletionService = new ExecutorCompletionService<String>(executor);
 
-        //Retrieve the result
-        for (Future<String> fut : list) {
+        //String result = "no cycle...";
+
+        for (int i = 0; i < nrWorkers; i++) {
+            taskCompletionService.submit(new ThreadWorker(file, version));
+        }
+        
+        for (int i = 0; i < nrWorkers; i++) {
+
             try {
-                if (fut.get().contains("found") || fut.get().contains("Found")) {
+                Future<String> stringResult = taskCompletionService.take();
+                String res = stringResult.get();
+                if (res.toLowerCase().contains("found a cycle")) {
+                    //toLowerCase() because the strings from the CycleFound's methods class
+                    //contain sometimes "Found a cycle" or "found a cycle".
+                    System.out.println(res);
                     executor.shutdownNow();
-                    System.out.println(fut.get());
                     break;
-                } else if (fut.get().contains("not")) {
-                    System.out.println("No cycle found.");
+                }else{
+                    System.out.println(res);
                 }
+            } catch (InterruptedException e) {
+                System.out.println("Error Interrupted exception");
+                e.printStackTrace();
             } catch (ExecutionException e) {
                 e.printStackTrace();
-            } catch (InterruptedException ex) {
-                Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
+                System.out.println("Error get() threw exception");
             }
         }
+
         executor.shutdown();
         while (!executor.isTerminated()) {
         }
+        /*
+         for (int i = 0; i < nrWorkers; i++) {
+         Callable<String> callable = new ThreadWorker(file, version);
+         Future<String> future = executor.submit(callable);
+         list.add(future);
+         }
+         //Retrieve the result
+         for (Future<String> fut : taskCompletionService) {
+         try {
+         if (fut.get().contains("found") || fut.get().contains("Found")) {
+         executor.shutdownNow();
+         System.out.println(fut.get());
+         break;
+         } else if (fut.get().contains("not")) {
+         System.out.println("No cycle found.");
+         }
+         } catch (ExecutionException e) {
+         e.printStackTrace();
+         } catch (InterruptedException ex) {
+         Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
+         }
+         }
+         executor.shutdown();
+         while (!executor.isTerminated()) {
+         }
+         * */
 
         System.out.println("All threads are done.");
     }
