@@ -107,32 +107,6 @@ public class Main {
         executor.shutdown();
         while (!executor.isTerminated()) {
         }
-        /*
-         for (int i = 0; i < nrWorkers; i++) {
-         Callable<String> callable = new ThreadWorker(file, version);
-         Future<String> future = executor.submit(callable);
-         list.add(future);
-         }
-         //Retrieve the result
-         for (Future<String> fut : taskCompletionService) {
-         try {
-         if (fut.get().contains("found") || fut.get().contains("Found")) {
-         executor.shutdownNow();
-         System.out.println(fut.get());
-         break;
-         } else if (fut.get().contains("not")) {
-         System.out.println("No cycle found.");
-         }
-         } catch (ExecutionException e) {
-         e.printStackTrace();
-         } catch (InterruptedException ex) {
-         Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
-         }
-         }
-         executor.shutdown();
-         while (!executor.isTerminated()) {
-         }
-         * */
 
         System.out.println("All threads are done.");
     }
