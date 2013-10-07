@@ -9,10 +9,14 @@ import java.util.HashMap;
 import graph.GraphFactory;
 import graph.Graph;
 import graph.State;
+import java.util.AbstractCollection;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CompletionService;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -67,10 +71,19 @@ public class Main {
     // To factor with runNDFS ? problem with Color argument
     private static void runMCNDFS(final String version, final File file, int nrWorkers) throws FileNotFoundException, ArgumentException {
 
-
         ExecutorService executor = Executors.newFixedThreadPool(nrWorkers);
-        List<Future<String>> list = new ArrayList<Future<String>>();
-
+        Collection<Callable<String>> solvers = new ArrayList<Callable<String>>();
+        CompletionService<String> ecs = new ExecutorCompletionService<String>(executor);
+        
+        List<Future<String>> futures = new ArrayList<Future<String>>(nrWorkers);
+        String result = "no cycle...";
+        try {
+            
+        
+        }finally{
+            for (Future<String> f : futures)
+                f.cancel(true);
+        }
         for (int i = 0; i < nrWorkers; i++) {
             Callable<String> callable = new ThreadWorker(file, version);
             Future<String> future = executor.submit(callable);
@@ -78,15 +91,14 @@ public class Main {
         }
 
         //Retrieve the result
-        for (Future<String> fut: list) {
+        for (Future<String> fut : list) {
             try {
                 if (fut.get().contains("found") || fut.get().contains("Found")) {
                     executor.shutdownNow();
                     System.out.println(fut.get());
                     break;
-                }
-                else if (fut.get().contains("not")){ 
-                    System.out.println("No cycle found, bitch!");
+                } else if (fut.get().contains("not")) {
+                    System.out.println("No cycle found.");
                 }
             } catch (ExecutionException e) {
                 e.printStackTrace();
@@ -95,13 +107,12 @@ public class Main {
             }
         }
         executor.shutdown();
-        while(!executor.isTerminated()){
+        while (!executor.isTerminated()) {
         }
-        
+
         System.out.println("All threads are done.");
     }
 
-    
     private static void dispatch(final File file, String version, int nrWorkers)
             throws ArgumentException, FileNotFoundException {
         switch (version) {
@@ -137,7 +148,7 @@ public class Main {
             int nrWorkers = new Integer(argv[2]);
 
             dispatch(file, version, nrWorkers);
-            
+
         } catch (FileNotFoundException e) {
             System.err.println(e.getMessage());
         } catch (ArgumentException e) {
