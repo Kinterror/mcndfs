@@ -71,14 +71,13 @@ public class MCNDFS implements NDFS {
             if (colors.hasColor(t, Color.WHITE) && red.isRed(t) == false) {
                 dfsBlue(t);
             }
-            if (red.isRed(t)){ //added, critical section?
+            if (red.isRed(t) == false){ //added, critical section?
                 allred = false; //added
             }
         }
         if (allred){ //added
             red.setRed(s, true); //added, critical section?
-        }
-        else if (s.isAccepting()) {
+        } else if (s.isAccepting()) {
             count.incrementCounter(s);
             dfsRed(s);
         } 
