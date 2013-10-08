@@ -20,4 +20,8 @@ public class NDFSFactory {
             ndfs.mcndfs_1_naive.Color> map, Map<State, Boolean> pinkMap) {
         return new ndfs.mcndfs_1_naive.MCNDFS(graph, map, pinkMap);
     }
+    
+    public static NDFS createMCNDFSExtended(Graph graph, Map<State, ndfs.mcndfs_extensions.ColorExt> map){
+        return new ndfs.mcndfs_extensions.MCNDFSExt(graph, map);
+    }
 }

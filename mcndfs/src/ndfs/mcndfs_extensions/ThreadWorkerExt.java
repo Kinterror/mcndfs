@@ -1,4 +1,4 @@
-package ndfs.mcndfs_1_naive;
+package ndfs.mcndfs_extensions;
 
 import graph.Graph;
 import graph.GraphFactory;
@@ -12,12 +12,12 @@ import ndfs.NDFS;
 import ndfs.NDFSFactory;
 import ndfs.Result;
 
-public class ThreadWorker implements Callable<String> {
+public class ThreadWorkerExt implements Callable<String> {
 
     private File file;
     private String version;
 
-    public ThreadWorker(File file, String version) {
+    public ThreadWorkerExt(File file, String version) {
         this.file = file;
         this.version = version;
 
@@ -25,13 +25,12 @@ public class ThreadWorker implements Callable<String> {
 
     @Override
     public String call() throws Exception {
-        System.out.println(Thread.currentThread().getName() + " has just started (MCNDFS Naive)");
+        System.out.println(Thread.currentThread().getName() + " has just started (Multicore Extended)");
         try {
             Graph graph = GraphFactory.createGraph(file);
-            Map<State, ndfs.mcndfs_1_naive.Color> colorStore = new HashMap<State, ndfs.mcndfs_1_naive.Color>();
-            Map<State, Boolean> pinkStore = new HashMap<State, Boolean>();
+            Map<State, ndfs.mcndfs_extensions.ColorExt> colorStore = new HashMap<State, ndfs.mcndfs_extensions.ColorExt>();
 
-            NDFS ndfs = NDFSFactory.createMCNDFSNaive(graph, colorStore, pinkStore);
+            NDFS ndfs = NDFSFactory.createMCNDFSExtended(graph, colorStore);
 
             long start = System.currentTimeMillis();
 

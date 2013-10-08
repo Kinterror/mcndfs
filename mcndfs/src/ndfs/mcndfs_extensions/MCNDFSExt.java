@@ -1,41 +1,40 @@
 package ndfs.mcndfs_extensions;
 
-import java.util.Map;
-
 import graph.State;
 import graph.Graph;
+
+import java.util.Map;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import ndfs.CycleFound;
-
-import ndfs.NDFS;
-import ndfs.NoCycleFound;
-import ndfs.Result;
 import java.util.List;
 import java.util.Random;
 
+import ndfs.CycleFound;
+import ndfs.NDFS;
+import ndfs.NoCycleFound;
+import ndfs.Result;
 
-public class MCNDFS implements NDFS {
+
+
+public class MCNDFSExt implements NDFS {
 
     private Graph graph;
-    private Colors colors;
-    private static Red red;
-    private static Counter count;
-    //private Pink pink;
+    private ColorsExt colors;
+    private static RedExt red;
+    private static CounterExt count;
     private boolean allred; //added
 
     // Initialize all the static fields
     static {
-        red = new Red(new HashMap<State, Boolean>());
-        count = new Counter(new HashMap<State, Integer>());
+        red = new RedExt(new HashMap<State, Boolean>());
+        count = new CounterExt(new HashMap<State, Integer>());
     }
 
-    public MCNDFS(Graph graph, Map<State, Color> colorStore, Map<State, Boolean> pinkStore) {
+    public MCNDFSExt(Graph graph, Map<State, ColorExt> colorStore) {
         this.graph = graph;
-        this.colors = new Colors(colorStore);
-        //this.pink = new Pink(pinkStore);
+        this.colors = new ColorsExt(colorStore);
     }
 
     @Override
@@ -43,12 +42,12 @@ public class MCNDFS implements NDFS {
     }
 
     private void dfsRed(State s) throws Result {
-        colors.color(s, Color.PINK);
+        colors.color(s, ColorExt.PINK);
         for (State t : graph.post(s)) {
-            if (colors.hasColor(t, Color.CYAN)) {
+            if (colors.hasColor(t, ColorExt.CYAN)) {
                 throw new CycleFound(Thread.currentThread().getName());
             }
-            if (colors.hasColor(t, Color.PINK) == false && red.isRed(t) == false) {
+            if (colors.hasColor(t, ColorExt.PINK) == false && red.isRed(t) == false) {
                 dfsRed(t);
             }
         }
@@ -61,14 +60,14 @@ public class MCNDFS implements NDFS {
 
     private void dfsBlue(State s) throws Result {
         allred = true; //added, critical section?
-        colors.color(s, Color.CYAN);
+        colors.color(s, ColorExt.CYAN);
         List<State> listOfStates = graph.post(s);
         Collections.shuffle(listOfStates, new Random( System.nanoTime()));
         for (State t : listOfStates) {
-            if (colors.hasColor(t, Color.CYAN) && (s.isAccepting() || t.isAccepting())){
+            if (colors.hasColor(t, ColorExt.CYAN) && (s.isAccepting() || t.isAccepting())){
                 throw new CycleFound(Thread.currentThread().getName());
             }
-            if (colors.hasColor(t, Color.WHITE) && red.isRed(t) == false) {
+            if (colors.hasColor(t, ColorExt.WHITE) && red.isRed(t) == false) {
                 dfsBlue(t);
             }
             if (red.isRed(t)){ //added, critical section?
@@ -82,7 +81,7 @@ public class MCNDFS implements NDFS {
             count.incrementCounter(s);
             dfsRed(s);
         } 
-        colors.color(s, Color.BLUE);
+        colors.color(s, ColorExt.BLUE);
     }
 
     private void mcndfs(State s) throws Result {
@@ -99,7 +98,7 @@ public class MCNDFS implements NDFS {
         try {
             count.decrementCounter(s);
         } catch (Exception ex) {
-            Logger.getLogger(MCNDFS.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(MCNDFSExt.class.getName()).log(Level.SEVERE, null, ex);
         }    
     }
 
@@ -110,7 +109,7 @@ public class MCNDFS implements NDFS {
                     count.equalZero.await();
                 }
             } catch (InterruptedException ex) {
-                Logger.getLogger(MCNDFS.class.getName()).log(Level.SEVERE, null, ex);
+                Logger.getLogger(MCNDFSExt.class.getName()).log(Level.SEVERE, null, ex);
             } finally {
                 count.lock.unlock();
             }
