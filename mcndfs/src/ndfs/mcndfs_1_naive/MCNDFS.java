@@ -15,16 +15,6 @@ import ndfs.NoCycleFound;
 import ndfs.Result;
 import java.util.List;
 import java.util.Random;
-import ndfs.mcndfs_1_naive.Color;
-import ndfs.mcndfs_1_naive.Color;
-import ndfs.mcndfs_1_naive.Colors;
-import ndfs.mcndfs_1_naive.Colors;
-import ndfs.mcndfs_1_naive.Counter;
-import ndfs.mcndfs_1_naive.Counter;
-import ndfs.mcndfs_1_naive.Pink;
-import ndfs.mcndfs_1_naive.Pink;
-import ndfs.mcndfs_1_naive.Red;
-import ndfs.mcndfs_1_naive.Red;
 
 public class MCNDFS implements NDFS {
 
@@ -33,6 +23,7 @@ public class MCNDFS implements NDFS {
     private static Red red;
     private static Counter count;
     private Pink pink;
+    private boolean allred; //added
 
     // Initialize all the static fields
     static {
@@ -55,49 +46,43 @@ public class MCNDFS implements NDFS {
         for (State t : graph.post(s)) {
             if (colors.hasColor(t, Color.CYAN)) {
                 throw new CycleFound(Thread.currentThread().getName());
-
             }
             if (pink.isPink(t) == false && red.isRed(t) == false) {
                 dfsRed(t);
             }
         }
         if (s.isAccepting()) {
-            try {
-                count.decrementCounter(s);
-            } catch (Exception ex) {
-                Logger.getLogger(MCNDFS.class.getName()).log(Level.SEVERE, null, ex);
-            }
-
-            count.lock.lock();
-            try {
-                while (count.getValue(s) > 0) {
-                    count.equalZero.await();
-                }
-            } catch (InterruptedException ex) {
-                Logger.getLogger(MCNDFS.class.getName()).log(Level.SEVERE, null, ex);
-            } finally {
-                count.lock.unlock();
-            }
+            decrementCounter(s); //changed to private method
+            await(s); //changed to private method
         }
         red.setRed(s, true);
-        pink.setPink(s, false); 
+//        pink.setPink(s, false); //delete
     }
 
     private void dfsBlue(State s) throws Result {
+        allred = true; //added, critical section?
         colors.color(s, Color.CYAN);
         List<State> listOfStates = graph.post(s);
         Collections.shuffle(listOfStates, new Random( System.nanoTime()));
         for (State t : listOfStates) {
+            if (colors.hasColor(t, Color.CYAN) && (s.isAccepting() || t.isAccepting())){
+                throw new CycleFound(Thread.currentThread().getName());
+            }
             if (colors.hasColor(t, Color.WHITE) && red.isRed(t) == false) {
                 dfsBlue(t);
             }
+            if (red.isRed(t)){ //added, critical section?
+                allred = false; //added
+            }
         }
-        if (s.isAccepting()) {
+        if (allred){ //added
+            red.setRed(s, true); //added, critical section?
+        }
+        else if (s.isAccepting()) {
             count.incrementCounter(s);
             dfsRed(s);
-        } else {
-            colors.color(s, Color.BLUE);
-        }
+        } 
+        colors.color(s, Color.BLUE);
     }
 
     private void mcndfs(State s) throws Result {
@@ -108,5 +93,26 @@ public class MCNDFS implements NDFS {
     @Override
     public void ndfs() throws Result {
         mcndfs(graph.getInitialState());
+    }
+
+    private void decrementCounter(State s) {
+        try {
+            count.decrementCounter(s);
+        } catch (Exception ex) {
+            Logger.getLogger(MCNDFS.class.getName()).log(Level.SEVERE, null, ex);
+        }    
+    }
+
+    private void await(State s) {
+        count.lock.lock();
+            try {
+                while (count.getValue(s) > 0) {
+                    count.equalZero.await();
+                }
+            } catch (InterruptedException ex) {
+                Logger.getLogger(MCNDFS.class.getName()).log(Level.SEVERE, null, ex);
+            } finally {
+                count.lock.unlock();
+            }
     }
 }
