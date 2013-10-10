@@ -10,6 +10,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.ConcurrentHashMap;
 
 import ndfs.CycleFound;
 import ndfs.NDFS;
@@ -28,7 +29,7 @@ public class MCNDFSExt implements NDFS {
 
     // Initialize all the static fields
     static {
-        red = new RedExt(new HashMap<State, Boolean>());
+        red = new RedExt(new ConcurrentHashMap<State, Boolean>());
         count = new CounterExt(new HashMap<State, Integer>());
     }
 
@@ -62,7 +63,7 @@ public class MCNDFSExt implements NDFS {
         allred = true; //added, critical section?
         colors.color(s, ColorExt.CYAN);
         List<State> listOfStates = graph.post(s);
-        Collections.shuffle(listOfStates, new Random( System.nanoTime()));
+        Collections.shuffle(listOfStates, new Random(System.nanoTime())); // seed = 0
         for (State t : listOfStates) {
             if (colors.hasColor(t, ColorExt.CYAN) && (s.isAccepting() || t.isAccepting())){
                 throw new CycleFound(Thread.currentThread().getName());
