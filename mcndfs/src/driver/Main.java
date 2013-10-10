@@ -78,7 +78,7 @@ public class Main {
                     //contain sometimes "Found a cycle" or "found a cycle".
                     System.out.println(res);
                     executor.shutdownNow();
-                    break;
+                    System.exit(0);
                 }else{
                     System.out.println(res);
                 }
@@ -118,7 +118,7 @@ public class Main {
                     //contain sometimes "Found a cycle" or "found a cycle".
                     System.out.println(res);
                     executor.shutdownNow();
-                    break;
+                    System.exit(0);
                 }else{
                     System.out.println(res);
                 }
